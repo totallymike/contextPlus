@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Context Plus",
-  "version": "0.1.0",
+  "version": "0.1.0beta1",
 
   "description": "Add a bunch of extra stuff to contextual identity features",
 
@@ -9,9 +9,15 @@
     "48": "icons/border-48.png"
   },
 
+  "background": {
+    "scripts": ["contextPlus.js"]
+  },
+
   "permissions": [
     "activeTab",
     "contextMenus",
-    "contextualIdentities"
+    "contextualIdentities",
+    "cookies",
+    "tabs"
   ]
 }
