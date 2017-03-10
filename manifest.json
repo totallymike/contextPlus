@@ -3,6 +3,12 @@
   "name": "Context Plus",
   "version": "0.1.0beta1",
 
+  "applications": {
+    "gecko": {
+      "strict_min_version": "53.0a1"
+    }
+  },
+
   "description": "Add a bunch of extra stuff to contextual identity features",
 
   "icons": {
