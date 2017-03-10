@@ -1,7 +1,7 @@
 if (browser.contextualIdentities !== undefined) {
   browser.contextualIdentities.query({})
     .then((contexts) => {
-      const parentId = chrome.contextMenus.create({
+      const parentId = browser.contextMenus.create({
         id: "moveContext",
         title: "Move to context",
         contexts: ["tab"]
@@ -24,7 +24,7 @@ if (browser.contextualIdentities !== undefined) {
       });
 
       contexts.forEach(context => {
-        chrome.contextMenus.create({
+        browser.contextMenus.create({
           type: "normal",
           title: context.name,
           id: `contextPlus-${context.name}`,
