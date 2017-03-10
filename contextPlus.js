@@ -13,6 +13,16 @@ if (browser.contextualIdentities !== undefined) {
         });
       }, {});
 
+      // Add a default context manually.
+      // Hope the name of the default cookieStore never changes :)
+      contextStore['contextPlus-default'] = 'firefox-default';
+      browser.contextMenus.create({
+        type: "normal",
+        title: "Default",
+        id: 'contextPlus-default',
+        parentId
+      });
+
       contexts.forEach(context => {
         chrome.contextMenus.create({
           type: "normal",
