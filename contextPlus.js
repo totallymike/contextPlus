@@ -34,6 +34,7 @@ if (browser.contextualIdentities !== undefined) {
 
       browser.contextMenus.onClicked.addListener(function (info, tab) {
         if (contextStore.hasOwnProperty(info.menuItemId)) {
+          const moveTab = !info.modifiers.includes('Ctrl');
           const cookieStoreId = contextStore[info.menuItemId];
           const newTabData = {
             active,
@@ -43,14 +44,16 @@ if (browser.contextualIdentities !== undefined) {
             windowId
           } = tab;
 
-          browser.tabs.create({
+          const newTabPromise = browser.tabs.create({
             active,
             cookieStoreId,
-            index,
+            index: index + (moveTab ? 0 : 1),
             pinned,
             url,
             windowId
-          }).then(() => browser.tabs.remove(tab.id));
+          });
+          if(moveTab)
+            newTabPromise.then(() => browser.tabs.remove(tab.id));
         }
       });
     });
