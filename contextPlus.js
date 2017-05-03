@@ -52,8 +52,9 @@ if (browser.contextualIdentities !== undefined) {
             url,
             windowId
           });
-          if(moveTab)
+          if (moveTab) {
             newTabPromise.then(() => browser.tabs.remove(tab.id));
+          }
         }
       });
     });
