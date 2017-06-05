@@ -38,7 +38,7 @@ const contextMenuContainers = {
 
     const onClickedHandler = async function (info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
-        const moveTab = !info.modifiers.includes("Ctrl");
+        const moveTab = !(info.modifiers && info.modifiers.includes("Ctrl"));
         const cookieStoreId = contextStore[info.menuItemId];
         const {
           active,
