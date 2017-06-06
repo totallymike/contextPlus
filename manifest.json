@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Context Plus",
-  "version": "0.3.2",
+  "version": "0.3.3",
 
   "applications": {
     "gecko": {
@@ -12,7 +12,8 @@
   "description": "Add a bunch of extra stuff to contextual identity features",
 
   "icons": {
-    "48": "icons/border-48.png"
+    "48": "icons/browsers-64.png",
+    "96": "icons/browsers-128.png"
   },
 
   "background": {
