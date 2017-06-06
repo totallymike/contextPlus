@@ -1,61 +1,69 @@
-if (browser.contextualIdentities !== undefined) {
-  browser.contextualIdentities.query({})
-    .then((contexts) => {
-      const parentId = browser.contextMenus.create({
-        id: "moveContext",
-        title: "Move to context",
-        contexts: ["tab"]
+const contextMenuContainers = {
+  async init() {
+    if (!browser.contextualIdentities) {
+      return;
+    }
+
+    const contextualIdentities = await browser.contextualIdentities.query({});
+    const parentId = browser.contextMenus.create({
+      id: "moveContext",
+      title: "Move to context",
+      contexts: ["tab"]
+    });
+
+    const contextStore = contextualIdentities.reduce((store, context) => {
+      return Object.assign({}, store, {
+        [`contextPlus-${context.name}`]: context.cookieStoreId
       });
+    }, {});
 
-      const contextStore = contexts.reduce((store, context) => {
-        return Object.assign({}, store, {
-          [`contextPlus-${context.name}`]: context.cookieStoreId
-        });
-      }, {});
+    // Add a default context manually.
+    // Hope the name of the default cookieStore never changes :)
+    contextStore["contextPlus-default"] = "firefox-default";
+    browser.contextMenus.create({
+      type: "normal",
+      title: "Default",
+      id: "contextPlus-default",
+      parentId
+    });
 
-      // Add a default context manually.
-      // Hope the name of the default cookieStore never changes :)
-      contextStore['contextPlus-default'] = 'firefox-default';
+    contextualIdentities.forEach(context => {
       browser.contextMenus.create({
         type: "normal",
-        title: "Default",
-        id: 'contextPlus-default',
+        title: context.name,
+        id: `contextPlus-${context.name}`,
         parentId
       });
-
-      contexts.forEach(context => {
-        browser.contextMenus.create({
-          type: "normal",
-          title: context.name,
-          id: `contextPlus-${context.name}`,
-          parentId
-        });
-      });
-
-      browser.contextMenus.onClicked.addListener(function (info, tab) {
-        if (contextStore.hasOwnProperty(info.menuItemId)) {
-          const moveTab = !info.modifiers.includes('Ctrl');
-          const cookieStoreId = contextStore[info.menuItemId];
-          const newTabData = {
-            active,
-            index,
-            pinned,
-            url,
-            windowId
-          } = tab;
-
-          const newTabPromise = browser.tabs.create({
-            active,
-            cookieStoreId,
-            index: index + (moveTab ? 0 : 1),
-            pinned,
-            url,
-            windowId
-          });
-          if (moveTab) {
-            newTabPromise.then(() => browser.tabs.remove(tab.id));
-          }
-        }
-      });
     });
-}
+
+    const onClickedHandler = async function (info, tab) {
+      if (contextStore.hasOwnProperty(info.menuItemId)) {
+        const moveTab = !info.modifiers.includes("Ctrl");
+        const cookieStoreId = contextStore[info.menuItemId];
+        const {
+          active,
+          index,
+          pinned,
+          url,
+          windowId
+        } = tab;
+
+        const newTabPromise = browser.tabs.create({
+          active,
+          cookieStoreId,
+          index: index + (moveTab ? 0 : 1),
+          pinned,
+          url,
+          windowId
+        });
+        if (moveTab) {
+          await newTabPromise;
+          browser.tabs.remove(tab.id);
+        }
+      }
+    };
+    browser.contextMenus.onClicked.addListener(onClickedHandler);
+  }
+};
+
+contextMenuContainers.init();
