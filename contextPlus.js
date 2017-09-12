@@ -40,11 +40,11 @@ const contextMenuContainers = {
 
     contextualIdentities.forEach(context => {
 
-      fetch("icons/usercontext-"+context.icon+".svg").then( response => response.text()).then( svg => {
+      fetch(`icons/usercontext-${context.icon}.svg`).then( response => response.text()).then( svg => {
         svg = svg.replace('context-fill', '%23'+colors[context.color]);
 
         browser.contextMenus.create({
-          type: "normal",
+          type: 'normal',
           title: context.name,
           id: `contextPlus-${context.name}`,
           parentId,
