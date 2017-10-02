@@ -7,7 +7,7 @@ const contextMenuContainers = {
     const contextualIdentities = await browser.contextualIdentities.query({});
     const parentId = browser.contextMenus.create({
       id: "moveContext",
-      title: "Move to context",
+      title: "Move to Context",
       contexts: ["tab", "page"]
     });
 
