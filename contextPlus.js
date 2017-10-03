@@ -27,13 +27,34 @@ const contextMenuContainers = {
       parentId
     });
 
+    const colors = {
+      blue: '00a7e0',
+      turquoise: '01bdad',
+      green: '7dc14c',
+      yellow: 'ffcb00',
+      orange: 'ff9216',
+      red: 'd92215',
+      pink: 'ee5195',
+      purple: '7a2f7a'
+    };
+
     contextualIdentities.forEach(context => {
-      browser.contextMenus.create({
-        type: "normal",
-        title: context.name,
-        id: `contextPlus-${context.name}`,
-        parentId
+
+      fetch(`icons/usercontext-${context.icon}.svg`).then( response => response.text()).then( svg => {
+        svg = svg.replace('context-fill', '%23'+colors[context.color]);
+
+        browser.contextMenus.create({
+          type: 'normal',
+          title: context.name,
+          id: `contextPlus-${context.name}`,
+          parentId,
+          icons: {
+            16: 'data:image/svg+xml;utf8,'+svg
+          }
+        });
+        
       });
+
     });
 
     const onClickedHandler = async function (info, tab) {
