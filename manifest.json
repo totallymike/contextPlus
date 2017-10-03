@@ -5,7 +5,7 @@
 
   "applications": {
     "gecko": {
-      "strict_min_version": "53.0a1"
+      "strict_min_version": "56.0"
     }
   },
 
