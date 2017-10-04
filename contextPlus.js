@@ -17,13 +17,10 @@ const contextMenuContainers = {
     };
 
     const contextualIdentities = await browser.contextualIdentities.query({});
-    const contextStore = contextualIdentities.reduce((store, context) => {
-      return Object.assign(
-        { "contextPlus-default": defaultCookieStoreId },
-        store,
-        { [`contextPlus-${context.name}`]: context.cookieStoreId }
-      );
-    }, {});
+    const contextStore = contextualIdentities.reduce((store, context) => ({
+      ...store,
+      [`contextPlus-${context.name}`]: context.cookieStoreId,
+    }), {'contextPlus-default': defaultCookieStoreId});
 
     // The context menu is re-created each time a tab is activated
     // to account for its context.
@@ -56,7 +53,7 @@ const contextMenuContainers = {
           fetch(`icons/usercontext-${context.icon}.svg`)
             .then(response => response.text())
             .then(svg => {
-              svg = svg.replace("context-fill", "%23" + colors[context.color]);
+              svg = svg.replace("context-fill", `%23${colors[context.color]}`);
 
               browser.contextMenus.create({
                 type: "normal",
