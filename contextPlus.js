@@ -5,16 +5,6 @@ const contextMenuContainers = {
     }
 
     const defaultCookieStoreId = "firefox-default";
-    const colors = {
-      blue: "00a7e0",
-      turquoise: "01bdad",
-      green: "7dc14c",
-      yellow: "ffcb00",
-      orange: "ff9216",
-      red: "d92215",
-      pink: "ee5195",
-      purple: "7a2f7a",
-    };
 
     const contextualIdentities = await browser.contextualIdentities.query({});
     const contextStore = contextualIdentities.reduce((store, context) => {
@@ -56,7 +46,10 @@ const contextMenuContainers = {
           fetch(`icons/usercontext-${context.icon}.svg`)
             .then(response => response.text())
             .then(svg => {
-              svg = svg.replace("context-fill", "%23" + colors[context.color]);
+              svg = svg.replace(
+                "context-fill",
+                context.colorCode.replace("#", "%23")
+              );
 
               browser.contextMenus.create({
                 type: "normal",
