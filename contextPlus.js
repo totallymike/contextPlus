@@ -6,14 +6,14 @@ const contextMenuContainers = {
 
     const defaultCookieStoreId = "firefox-default";
     const colors = {
-      blue: "00a7e0",
-      turquoise: "01bdad",
-      green: "7dc14c",
+      blue: "37adff",
+      turquoise: "00c79a",
+      green: "51cd00",
       yellow: "ffcb00",
-      orange: "ff9216",
-      red: "d92215",
-      pink: "ee5195",
-      purple: "7a2f7a",
+      orange: "ff9f00",
+      red: "ff613d",
+      pink: "ff4bda",
+      purple: "af51f5",
     };
 
     const contextualIdentities = await browser.contextualIdentities.query({});
