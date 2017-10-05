@@ -17,10 +17,13 @@ const contextMenuContainers = {
     };
 
     const contextualIdentities = await browser.contextualIdentities.query({});
-    const contextStore = contextualIdentities.reduce((store, context) => ({
-      ...store,
-      [`contextPlus-${context.name}`]: context.cookieStoreId,
-    }), {'contextPlus-default': defaultCookieStoreId});
+    const contextStore = contextualIdentities.reduce((store, context) => {
+      return Object.assign(
+        {},
+        store,
+        { [`contextPlus-${context.name}`]: context.cookieStoreId }
+      );
+    }, {"contextPlus-default": defaultCookieStoreId});
 
     // The context menu is re-created each time a tab is activated
     // to account for its context.
