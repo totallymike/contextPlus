@@ -4,70 +4,76 @@ const contextMenuContainers = {
       return;
     }
 
-    const contextualIdentities = await browser.contextualIdentities.query({});
-    const parentId = browser.contextMenus.create({
-      id: "moveContext",
-      title: "Move to Context",
-      contexts: ["tab", "page"]
-    });
-
-    const contextStore = contextualIdentities.reduce((store, context) => {
-      return Object.assign({}, store, {
-        [`contextPlus-${context.name}`]: context.cookieStoreId
-      });
-    }, {});
-
-    // Add a default context manually.
-    // Hope the name of the default cookieStore never changes :)
-    contextStore["contextPlus-default"] = "firefox-default";
-    browser.contextMenus.create({
-      type: "normal",
-      title: "Default",
-      id: "contextPlus-default",
-      parentId
-    });
-
+    const defaultCookieStoreId = "firefox-default";
     const colors = {
-      blue: '00a7e0',
-      turquoise: '01bdad',
-      green: '7dc14c',
-      yellow: 'ffcb00',
-      orange: 'ff9216',
-      red: 'd92215',
-      pink: 'ee5195',
-      purple: '7a2f7a'
+      blue: "37adff",
+      turquoise: "00c79a",
+      green: "51cd00",
+      yellow: "ffcb00",
+      orange: "ff9f00",
+      red: "ff613d",
+      pink: "ff4bda",
+      purple: "af51f5",
     };
 
-    contextualIdentities.forEach(context => {
+    const contextualIdentities = await browser.contextualIdentities.query({});
+    const contextStore = contextualIdentities.reduce((store, context) => ({
+      ...store,
+      [`contextPlus-${context.name}`]: context.cookieStoreId,
+    }), {'contextPlus-default': defaultCookieStoreId});
 
-      fetch(`icons/usercontext-${context.icon}.svg`).then( response => response.text()).then( svg => {
-        svg = svg.replace('context-fill', '%23'+colors[context.color]);
-
-        browser.contextMenus.create({
-          type: 'normal',
-          title: context.name,
-          id: `contextPlus-${context.name}`,
-          parentId,
-          icons: {
-            16: 'data:image/svg+xml;utf8,'+svg
-          }
-        });
-        
+    // The context menu is re-created each time a tab is activated
+    // to account for its context.
+    const onActivatedTabHandler = async function({ tabId }) {
+      browser.contextMenus.removeAll();
+      const parentId = browser.contextMenus.create({
+        id: "moveContext",
+        title: "Move to Context",
+        contexts: ["tab", "page"],
       });
 
-    });
+      const activeTab = await browser.tabs.get(tabId);
+      if (activeTab.cookieStoreId !== defaultCookieStoreId) {
+        browser.contextMenus.create({
+          type: "normal",
+          title: "No Context",
+          id: "contextPlus-default",
+          parentId,
+        });
+        browser.contextMenus.create({
+          type: "separator",
+          id: "contextPlus-separator",
+          parentId,
+        });
+      }
 
-    const onClickedHandler = async function (info, tab) {
+      contextualIdentities
+        .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
+        .forEach(context => {
+          fetch(`icons/usercontext-${context.icon}.svg`)
+            .then(response => response.text())
+            .then(svg => {
+              svg = svg.replace("context-fill", `%23${colors[context.color]}`);
+
+              browser.contextMenus.create({
+                type: "normal",
+                title: context.name,
+                id: `contextPlus-${context.name}`,
+                parentId,
+                icons: {
+                  16: "data:image/svg+xml;utf8," + svg,
+                },
+              });
+            });
+        });
+    };
+    browser.tabs.onActivated.addListener(onActivatedTabHandler);
+
+    const onClickedHandler = async function(info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
         const moveTab = !(info.modifiers && info.modifiers.includes("Ctrl"));
         const cookieStoreId = contextStore[info.menuItemId];
-        const {
-          active,
-          index,
-          pinned,
-          url,
-          windowId
-        } = tab;
+        const { active, index, pinned, url, windowId } = tab;
 
         const newTabPromise = browser.tabs.create({
           active,
@@ -75,7 +81,7 @@ const contextMenuContainers = {
           index: index + (moveTab ? 0 : 1),
           pinned,
           url,
-          windowId
+          windowId,
         });
         if (moveTab) {
           await newTabPromise;
@@ -84,7 +90,7 @@ const contextMenuContainers = {
       }
     };
     browser.contextMenus.onClicked.addListener(onClickedHandler);
-  }
+  },
 };
 
 contextMenuContainers.init();
