@@ -1,10 +1,69 @@
+let contextStore = {};
+
 const contextMenuContainers = {
+  // The context menu is re-created each time a tab is activated
+  // to account for its context.
+  defaultCookieStoreId: "firefox-default",
+  async onActivatedTabHandler({ tabId }) {
+    browser.contextMenus.removeAll();
+    const parentId = browser.contextMenus.create({
+      id: "moveContext",
+      title: "Move to Context",
+      contexts: ["tab", "page"],
+    });
+
+    const activeTab = await browser.tabs.get(tabId);
+    if (activeTab.cookieStoreId !== defaultCookieStoreId) {
+      browser.contextMenus.create({
+        type: "normal",
+        title: "No Context",
+        id: "contextPlus-default",
+        parentId,
+      });
+      browser.contextMenus.create({
+        type: "separator",
+        id: "contextPlus-separator",
+        parentId,
+      });
+    }
+
+    contextualIdentities
+      .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
+      .forEach(context => {
+        fetch(`icons/usercontext-${context.icon}.svg`)
+          .then(response => response.text())
+          .then(svg => {
+            svg = svg.replace("context-fill", `%23${colors[context.color]}`);
+
+            browser.contextMenus.create({
+              type: "normal",
+              title: context.name,
+              id: `contextPlus-${context.name}`,
+              parentId,
+              icons: {
+                16: "data:image/svg+xml;utf8," + svg,
+              },
+            });
+          });
+      });
+  },
+
+  async updateStore() {
+    const contextualIdentities = await browser.contextualIdentities.query({});
+    contextStore = contextualIdentities.reduce((store, context) => {
+      return Object.assign(
+        {},
+        store,
+        { [`contextPlus-${context.name}`]: context.cookieStoreId }
+      );
+    }, {"contextPlus-default": contextMenuContainers.defaultCookieStoreId});
+  },
+
   async init() {
     if (!browser.contextualIdentities) {
       return;
     }
 
-    const defaultCookieStoreId = "firefox-default";
     const colors = {
       blue: "37adff",
       turquoise: "00c79a",
@@ -16,61 +75,9 @@ const contextMenuContainers = {
       purple: "af51f5",
     };
 
-    const contextualIdentities = await browser.contextualIdentities.query({});
-    const contextStore = contextualIdentities.reduce((store, context) => {
-      return Object.assign(
-        {},
-        store,
-        { [`contextPlus-${context.name}`]: context.cookieStoreId }
-      );
-    }, {"contextPlus-default": defaultCookieStoreId});
+    await contextMenuContainers.updateStore();
 
-    // The context menu is re-created each time a tab is activated
-    // to account for its context.
-    const onActivatedTabHandler = async function({ tabId }) {
-      browser.contextMenus.removeAll();
-      const parentId = browser.contextMenus.create({
-        id: "moveContext",
-        title: "Move to Context",
-        contexts: ["tab", "page"],
-      });
-
-      const activeTab = await browser.tabs.get(tabId);
-      if (activeTab.cookieStoreId !== defaultCookieStoreId) {
-        browser.contextMenus.create({
-          type: "normal",
-          title: "No Context",
-          id: "contextPlus-default",
-          parentId,
-        });
-        browser.contextMenus.create({
-          type: "separator",
-          id: "contextPlus-separator",
-          parentId,
-        });
-      }
-
-      contextualIdentities
-        .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
-        .forEach(context => {
-          fetch(`icons/usercontext-${context.icon}.svg`)
-            .then(response => response.text())
-            .then(svg => {
-              svg = svg.replace("context-fill", `%23${colors[context.color]}`);
-
-              browser.contextMenus.create({
-                type: "normal",
-                title: context.name,
-                id: `contextPlus-${context.name}`,
-                parentId,
-                icons: {
-                  16: "data:image/svg+xml;utf8," + svg,
-                },
-              });
-            });
-        });
-    };
-    browser.tabs.onActivated.addListener(onActivatedTabHandler);
+    browser.tabs.onActivated.addListener(contextMenuContainers.onActivatedTabHandler);
 
     const onClickedHandler = async function(info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
@@ -93,6 +100,10 @@ const contextMenuContainers = {
       }
     };
     browser.contextMenus.onClicked.addListener(onClickedHandler);
+    browser.contextualIdentities.onCreated.addListener(async function () {
+      await contextMenuContainers.updateStore();
+      contextMenuContainers.onActivatedTabHandler();
+    });
   },
 };
 
