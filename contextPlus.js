@@ -3,6 +3,17 @@ let contextStore = {};
 const contextMenuContainers = {
   // The context menu is re-created each time a tab is activated
   // to account for its context.
+  contextualIdentities: undefined,
+  colors: {
+    blue: "37adff",
+    turquoise: "00c79a",
+    green: "51cd00",
+    yellow: "ffcb00",
+    orange: "ff9f00",
+    red: "ff613d",
+    pink: "ff4bda",
+    purple: "af51f5",
+  },
   defaultCookieStoreId: "firefox-default",
   async onActivatedTabHandler({ tabId }) {
     browser.contextMenus.removeAll();
@@ -13,7 +24,7 @@ const contextMenuContainers = {
     });
 
     const activeTab = await browser.tabs.get(tabId);
-    if (activeTab.cookieStoreId !== defaultCookieStoreId) {
+    if (activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId) {
       browser.contextMenus.create({
         type: "normal",
         title: "No Context",
@@ -27,12 +38,13 @@ const contextMenuContainers = {
       });
     }
 
-    contextualIdentities
+    contextMenuContainers.contextualIdentities
       .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
       .forEach(context => {
         fetch(`icons/usercontext-${context.icon}.svg`)
           .then(response => response.text())
           .then(svg => {
+            const colors = contextMenuContainers.colors;
             svg = svg.replace("context-fill", `%23${colors[context.color]}`);
 
             browser.contextMenus.create({
@@ -50,6 +62,7 @@ const contextMenuContainers = {
 
   async updateStore() {
     const contextualIdentities = await browser.contextualIdentities.query({});
+    contextMenuContainers.contextualIdentities = contextualIdentities;
     contextStore = contextualIdentities.reduce((store, context) => {
       return Object.assign(
         {},
@@ -63,17 +76,6 @@ const contextMenuContainers = {
     if (!browser.contextualIdentities) {
       return;
     }
-
-    const colors = {
-      blue: "37adff",
-      turquoise: "00c79a",
-      green: "51cd00",
-      yellow: "ffcb00",
-      orange: "ff9f00",
-      red: "ff613d",
-      pink: "ff4bda",
-      purple: "af51f5",
-    };
 
     await contextMenuContainers.updateStore();
 
