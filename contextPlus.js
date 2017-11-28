@@ -1,76 +1,85 @@
+let contextStore = {};
+
 const contextMenuContainers = {
-  async init() {
-    if (!browser.contextualIdentities) {
-      return;
+  // The context menu is re-created each time a tab is activated
+  // to account for its context.
+  contextualIdentities: undefined,
+  colors: {
+    blue: "37adff",
+    turquoise: "00c79a",
+    green: "51cd00",
+    yellow: "ffcb00",
+    orange: "ff9f00",
+    red: "ff613d",
+    pink: "ff4bda",
+    purple: "af51f5",
+  },
+  defaultCookieStoreId: "firefox-default",
+  async onActivatedTabHandler({ tabId }) {
+    browser.contextMenus.removeAll();
+    const parentId = browser.contextMenus.create({
+      id: "moveContext",
+      title: "Move to Context",
+      contexts: ["tab", "page"],
+    });
+
+    const activeTab = await browser.tabs.get(tabId);
+    if (activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId) {
+      browser.contextMenus.create({
+        type: "normal",
+        title: "No Context",
+        id: "contextPlus-default",
+        parentId,
+      });
+      browser.contextMenus.create({
+        type: "separator",
+        id: "contextPlus-separator",
+        parentId,
+      });
     }
 
-    const defaultCookieStoreId = "firefox-default";
-    const colors = {
-      blue: "37adff",
-      turquoise: "00c79a",
-      green: "51cd00",
-      yellow: "ffcb00",
-      orange: "ff9f00",
-      red: "ff613d",
-      pink: "ff4bda",
-      purple: "af51f5",
-    };
+    contextMenuContainers.contextualIdentities
+      .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
+      .forEach(context => {
+        fetch(`icons/usercontext-${context.icon}.svg`)
+          .then(response => response.text())
+          .then(svg => {
+            const colors = contextMenuContainers.colors;
+            svg = svg.replace("context-fill", `%23${colors[context.color]}`);
 
+            browser.contextMenus.create({
+              type: "normal",
+              title: context.name,
+              id: `contextPlus-${context.name}`,
+              parentId,
+              icons: {
+                16: "data:image/svg+xml;utf8," + svg,
+              },
+            });
+          });
+      });
+  },
+
+  async updateStore() {
     const contextualIdentities = await browser.contextualIdentities.query({});
-    const contextStore = contextualIdentities.reduce((store, context) => {
+    contextMenuContainers.contextualIdentities = contextualIdentities;
+    contextStore = contextualIdentities.reduce((store, context) => {
       return Object.assign(
         {},
         store,
         { [`contextPlus-${context.name}`]: context.cookieStoreId }
       );
-    }, {"contextPlus-default": defaultCookieStoreId});
+    }, {"contextPlus-default": contextMenuContainers.defaultCookieStoreId});
+  },
 
-    // The context menu is re-created each time a tab is activated
-    // to account for its context.
-    const onActivatedTabHandler = async function({ tabId }) {
-      browser.contextMenus.removeAll();
-      const parentId = browser.contextMenus.create({
-        id: "moveContext",
-        title: "Move to Context",
-        contexts: ["tab", "page"],
-      });
+  async init() {
+    if (!browser.contextualIdentities) {
+      return;
+    }
 
-      const activeTab = await browser.tabs.get(tabId);
-      if (activeTab.cookieStoreId !== defaultCookieStoreId) {
-        browser.contextMenus.create({
-          type: "normal",
-          title: "No Context",
-          id: "contextPlus-default",
-          parentId,
-        });
-        browser.contextMenus.create({
-          type: "separator",
-          id: "contextPlus-separator",
-          parentId,
-        });
-      }
+    await contextMenuContainers.updateStore();
 
-      contextualIdentities
-        .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
-        .forEach(context => {
-          fetch(`icons/usercontext-${context.icon}.svg`)
-            .then(response => response.text())
-            .then(svg => {
-              svg = svg.replace("context-fill", `%23${colors[context.color]}`);
-
-              browser.contextMenus.create({
-                type: "normal",
-                title: context.name,
-                id: `contextPlus-${context.name}`,
-                parentId,
-                icons: {
-                  16: "data:image/svg+xml;utf8," + svg,
-                },
-              });
-            });
-        });
-    };
-    browser.tabs.onActivated.addListener(onActivatedTabHandler);
+    browser.tabs.onActivated.addListener(contextMenuContainers.onActivatedTabHandler);
 
     const onClickedHandler = async function(info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
@@ -93,6 +102,10 @@ const contextMenuContainers = {
       }
     };
     browser.contextMenus.onClicked.addListener(onClickedHandler);
+    browser.contextualIdentities.onCreated.addListener(async function () {
+      await contextMenuContainers.updateStore();
+      contextMenuContainers.onActivatedTabHandler();
+    });
   },
 };
 
