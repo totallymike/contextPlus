@@ -1,11 +1,11 @@
 {
   "manifest_version": 2,
   "name": "Context Plus",
-  "version": "0.4.2",
+  "version": "0.5.0",
 
   "applications": {
     "gecko": {
-      "strict_min_version": "56.0"
+      "strict_min_version": "57.0"
     }
   },
 
