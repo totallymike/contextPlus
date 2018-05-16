@@ -12,7 +12,7 @@ const contextMenuContainers = {
     orange: "ff9f00",
     red: "ff613d",
     pink: "ff4bda",
-    purple: "af51f5",
+    purple: "af51f5"
   },
   defaultCookieStoreId: "firefox-default",
   async onActivatedTabHandler({ tabId }) {
@@ -20,26 +20,36 @@ const contextMenuContainers = {
     const parentId = browser.contextMenus.create({
       id: "moveContext",
       title: "Move to Context",
-      contexts: ["tab", "page"],
+      contexts: ["tab", "page"]
     });
 
     const activeTab = await browser.tabs.get(tabId);
-    if (activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId) {
+    if (
+      activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId
+    ) {
       browser.contextMenus.create({
         type: "normal",
         title: "No Context",
         id: "contextPlus-default",
-        parentId,
+        parentId
       });
       browser.contextMenus.create({
         type: "separator",
         id: "contextPlus-separator",
-        parentId,
+        parentId
       });
     }
 
+    // Get the user's saved filter regex setting as set in the addon's options
+    const filterStore = await browser.storage.sync.get("filterRegex");
+    const filterRegex = filterStore.filterRegex;
+
     contextMenuContainers.contextualIdentities
       .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
+      .filter(
+        context =>
+          filterRegex ? !context.name.match(new RegExp(filterRegex)) : true
+      )
       .forEach(context => {
         fetch(`icons/usercontext-${context.icon}.svg`)
           .then(response => response.text())
@@ -53,8 +63,8 @@ const contextMenuContainers = {
               id: `contextPlus-${context.name}`,
               parentId,
               icons: {
-                16: "data:image/svg+xml;utf8," + svg,
-              },
+                16: "data:image/svg+xml;utf8," + svg
+              }
             });
           });
       });
@@ -63,13 +73,14 @@ const contextMenuContainers = {
   async updateStore() {
     const contextualIdentities = await browser.contextualIdentities.query({});
     contextMenuContainers.contextualIdentities = contextualIdentities;
-    contextStore = contextualIdentities.reduce((store, context) => {
-      return Object.assign(
-        {},
-        store,
-        { [`contextPlus-${context.name}`]: context.cookieStoreId }
-      );
-    }, {"contextPlus-default": contextMenuContainers.defaultCookieStoreId});
+    contextStore = contextualIdentities.reduce(
+      (store, context) => {
+        return Object.assign({}, store, {
+          [`contextPlus-${context.name}`]: context.cookieStoreId
+        });
+      },
+      { "contextPlus-default": contextMenuContainers.defaultCookieStoreId }
+    );
   },
 
   async init() {
@@ -79,7 +90,9 @@ const contextMenuContainers = {
 
     await contextMenuContainers.updateStore();
 
-    browser.tabs.onActivated.addListener(contextMenuContainers.onActivatedTabHandler);
+    browser.tabs.onActivated.addListener(
+      contextMenuContainers.onActivatedTabHandler
+    );
 
     const onClickedHandler = async function(info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
@@ -93,7 +106,7 @@ const contextMenuContainers = {
           index: index + (moveTab ? 0 : 1),
           pinned,
           url,
-          windowId,
+          windowId
         });
         if (moveTab) {
           await newTabPromise;
@@ -102,11 +115,11 @@ const contextMenuContainers = {
       }
     };
     browser.contextMenus.onClicked.addListener(onClickedHandler);
-    browser.contextualIdentities.onCreated.addListener(async function () {
+    browser.contextualIdentities.onCreated.addListener(async function() {
       await contextMenuContainers.updateStore();
       contextMenuContainers.onActivatedTabHandler();
     });
-  },
+  }
 };
 
 contextMenuContainers.init();

@@ -5,6 +5,7 @@
 
   "applications": {
     "gecko": {
+      "id": "context-plus@totallymike",
       "strict_min_version": "57.0"
     }
   },
@@ -20,10 +21,16 @@
     "scripts": ["contextPlus.js"]
   },
 
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": true
+  },
+
   "permissions": [
     "contextMenus",
     "contextualIdentities",
     "cookies",
+    "storage",
     "tabs"
   ]
 }
