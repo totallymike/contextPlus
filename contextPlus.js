@@ -24,7 +24,9 @@ const contextMenuContainers = {
     });
 
     const activeTab = await browser.tabs.get(tabId);
-    if (activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId) {
+    if (
+      activeTab.cookieStoreId !== contextMenuContainers.defaultCookieStoreId
+    ) {
       browser.contextMenus.create({
         type: "normal",
         title: "No Context",
@@ -38,8 +40,16 @@ const contextMenuContainers = {
       });
     }
 
+    // Get the user's saved filter regex setting as set in the addon's options
+    const filterStore = await browser.storage.sync.get("filterRegex");
+    const filterRegex = filterStore.filterRegex;
+
     contextMenuContainers.contextualIdentities
       .filter(context => context.cookieStoreId !== activeTab.cookieStoreId)
+      .filter(
+        context =>
+          filterRegex ? !context.name.match(new RegExp(filterRegex)) : true
+      )
       .forEach(context => {
         fetch(`icons/usercontext-${context.icon}.svg`)
           .then(response => response.text())
@@ -63,13 +73,14 @@ const contextMenuContainers = {
   async updateStore() {
     const contextualIdentities = await browser.contextualIdentities.query({});
     contextMenuContainers.contextualIdentities = contextualIdentities;
-    contextStore = contextualIdentities.reduce((store, context) => {
-      return Object.assign(
-        {},
-        store,
-        { [`contextPlus-${context.name}`]: context.cookieStoreId }
-      );
-    }, {"contextPlus-default": contextMenuContainers.defaultCookieStoreId});
+    contextStore = contextualIdentities.reduce(
+      (store, context) => {
+        return Object.assign({}, store, {
+          [`contextPlus-${context.name}`]: context.cookieStoreId,
+        });
+      },
+      { "contextPlus-default": contextMenuContainers.defaultCookieStoreId }
+    );
   },
 
   async init() {
@@ -79,7 +90,9 @@ const contextMenuContainers = {
 
     await contextMenuContainers.updateStore();
 
-    browser.tabs.onActivated.addListener(contextMenuContainers.onActivatedTabHandler);
+    browser.tabs.onActivated.addListener(
+      contextMenuContainers.onActivatedTabHandler
+    );
 
     const onClickedHandler = async function(info, tab) {
       if (contextStore.hasOwnProperty(info.menuItemId)) {
@@ -102,7 +115,7 @@ const contextMenuContainers = {
       }
     };
     browser.contextMenus.onClicked.addListener(onClickedHandler);
-    browser.contextualIdentities.onCreated.addListener(async function () {
+    browser.contextualIdentities.onCreated.addListener(async function() {
       await contextMenuContainers.updateStore();
       contextMenuContainers.onActivatedTabHandler();
     });

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+
+<body>
+  <p>
+    Use the option below to set a regular expression that filters the list of containers that
+    are displayed in the context menu. This is useful for when you want to hide containers that you don't
+    want to actively manage (for instance, Temporary Containers that are prefixed with "tmp").
+  </p>
+  <p>Current filter: <b id="saved_regex"></b></p>
+  <form>
+      <label>Regex for hiding contexts: </label>
+      <input type="text" id="filter_regex" >
+      <button type="reset">Clear</button>
+      <p>
+        <button type="submit">Save</button>
+      </p>
+  </form>
+  <script src="options.js"></script>
+</body>
+
+</html>
